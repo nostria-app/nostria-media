@@ -20,7 +20,7 @@ This app is also packaged as an npm module which you can easily run
 # copy the example config
 wget https://raw.githubusercontent.com/hzrd149/blossom-server/master/config.example.yml -O config.yml
 # run using npx
-npx blossom-server-ts
+npx @nostria/media-server
 ```
 
 ## Running with docker
