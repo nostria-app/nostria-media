@@ -16,7 +16,7 @@ services:
     #   DEBUG: "*"
     volumes:
       # mount data volume
-      - data:/app/data
+      - ${WEBAPP_STORAGE_HOME}:/app/data
       # mount config file
       - ./config.yml:/app/config.yml
       # mount custom www dir

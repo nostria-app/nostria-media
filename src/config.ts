@@ -76,7 +76,7 @@ function loadJson(filepath: string, content: string) {
 
 const defaultConfig: Config = {
   publicDomain: "",
-  databasePath: "data/sqlite.db",
+  databasePath: "/home/data/sqlite.db",
   dashboard: { enabled: false, username: "admin" },
   discovery: {
     nostr: { enabled: false, relays: [] },
@@ -85,7 +85,7 @@ const defaultConfig: Config = {
   storage: {
     backend: "local",
     removeWhenNoOwners: false,
-    local: { dir: "data/blobs" },
+    local: { dir: "/home/data/blobs" },
     rules: [],
   },
   upload: { enabled: false, requireAuth: true, requirePubkeyInRule: false },

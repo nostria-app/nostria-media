@@ -2,7 +2,7 @@
 # By default it uses the domain the incoming HTTP request was made on
 publicDomain: ""
 
-databasePath: data/sqlite.db
+databasePath: /home/data/sqlite.db
 
 dashboard:
   # enable or disable the admin dashboard
@@ -34,7 +34,7 @@ storage:
 
   # local storage
   local:
-    dir: ./data/blobs
+    dir: /home/data/blobs
 
   # see minio docs for options:
   # https://min.io/docs/minio/linux/developers/javascript/API.html#new-minio-client-endpoint-port-usessl-accesskey-secretkey-region-transport-sessiontoken-partsize
