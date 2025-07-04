@@ -113,7 +113,7 @@ media:
     # max fps (default 30)
     maxFps: 30
     # output format [mp4, webm, mkv] (default mp4)
-    format: "webm"
+    format: "mp4"
     # audio codec [aac, mp3, vorbis, opus] (default aac)
     audioCodec: "aac"
     # video codec [libx264, libx265, vp8, vp9] (default libx264)
