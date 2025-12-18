@@ -66,3 +66,37 @@ node .
 ```
 
 Once the server is running you can open `http://localhost:3000` to access the server
+
+## FFmpeg Requirements
+
+The media optimization features (video transcoding, format conversion) require FFmpeg to be installed.
+
+### Docker
+
+When running with Docker, FFmpeg 8.0.1 is built from source and included in the image with the following codecs:
+- **Video**: libx264, libx265, libvpx (VP8/VP9)
+- **Audio**: opus, mp3 (lame), vorbis, AAC (fdk-aac)
+
+### Running from source
+
+When running from source, you need to install FFmpeg separately:
+
+**Windows:**
+Download from [FFmpeg Builds](https://github.com/BtbN/FFmpeg-Builds/releases) and add to PATH.
+
+**macOS:**
+```sh
+brew install ffmpeg
+```
+
+**Linux (Ubuntu/Debian):**
+```sh
+sudo apt install ffmpeg
+```
+
+**Linux (Alpine):**
+```sh
+apk add ffmpeg
+```
+
+For security-critical deployments, FFmpeg 8.0.1 or later is recommended as it includes important security fixes.

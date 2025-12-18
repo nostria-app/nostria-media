@@ -1,5 +1,16 @@
 # blossom-server
 
+## Unreleased
+
+### Security
+
+- Upgrade to FFmpeg 8.0.1 (built from source in Docker) with important security fixes
+
+### Changes
+
+- Docker image now builds FFmpeg 8.0.1 from source instead of using Alpine packages
+- Added comprehensive FFmpeg documentation to README
+
 ## 5.2.0
 
 ### Minor Changes
