@@ -48,13 +48,14 @@ export type Config = {
     enabled: boolean;
     requireAuth: boolean;
     requirePubkeyInRule: boolean;
+    maxSize?: number; // max file size in bytes
   };
   media: {
     enabled: boolean;
     requireAuth: boolean;
     requirePubkeyInRule: boolean;
-    video?: VideoOptions;
-    image?: ImageOptions;
+    video?: VideoOptions & { maxSize?: number };
+    image?: ImageOptions & { maxSize?: number };
   };
   list: {
     requireAuth: boolean;

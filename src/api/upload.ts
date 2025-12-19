@@ -16,7 +16,8 @@ export type UploadState = CommonState & {
 
 export function checkUpload(
   authType: "upload" | "media",
-  opts: { requireAuth: boolean; requirePubkeyInRule: boolean },
+  opts: { requireAuth: boolean; requirePubkeyInRule: boolean; maxSize?: number },
+  getMaxSizeForType?: (contentType: string) => number | undefined,
 ) {
   return async (ctx: ParameterizedContext<DefaultState & CommonState>, next: Next) => {
     if (ctx.method === "HEAD" || ctx.method === "PUT") {
@@ -39,6 +40,12 @@ export function checkUpload(
         contentLength = parseInt(ctx.header["x-content-length"]);
       } else if (ctx.header["content-length"]) {
         contentLength = parseInt(ctx.header["content-length"]);
+      }
+
+      // check max file size (per-type limit takes priority over general limit)
+      const maxSize = getMaxSizeForType?.(contentType) ?? opts.maxSize;
+      if (maxSize && contentLength && contentLength > maxSize) {
+        throw new HttpErrors.PayloadTooLarge(`File size exceeds maximum allowed size of ${maxSize} bytes`);
       }
 
       const pubkey = ctx.state.auth?.pubkey;

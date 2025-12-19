@@ -90,6 +90,8 @@ upload:
   requireAuth: true
   # only check rules that include "pubkeys"
   requirePubkeyInRule: false
+  # max file size in bytes (default: no limit)
+  # maxSize: 20971520  # 20 MB
 
 # Config for the /media endpoint
 media:
@@ -102,6 +104,8 @@ media:
 
   # image optimization options
   image:
+    # max file size in bytes (default: no limit)
+    # maxSize: 20971520  # 20 MB
     # image quality 0-100 (default 90)
     quality: 90
     # create progressive jpeg / png images for large images > 1024x768 (default true)
@@ -120,6 +124,8 @@ media:
     fps: 30
 
   video:
+    # max file size in bytes (default: no limit)
+    # maxSize: 157286400  # 150 MB
     # video quality 0-100 (default 90)
     quality: 90
     # max height (default 1080)
