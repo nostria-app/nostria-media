@@ -1,90 +1,21 @@
 # syntax=docker/dockerfile:1
 
 # ============================================================================
-# FFmpeg 8.0.1 Build Stage
-# Builds ffmpeg from source with security fixes and comprehensive codec support
+# FFmpeg Static Binary Stage
+# Downloads pre-built static FFmpeg binaries (no runtime dependencies needed)
 # ============================================================================
-FROM alpine:3.21 AS ffmpeg-builder
+FROM alpine:3.21 AS ffmpeg-downloader
 
-# FFmpeg version with important security fixes
-ENV FFMPEG_VERSION=8.0.1
-
-# Install build dependencies
-RUN apk add --no-cache \
-    build-base \
-    pkgconf \
-    nasm \
-    yasm \
-    curl \
-    tar \
-    xz \
-    # Codec development libraries
-    x264-dev \
-    x265-dev \
-    libvpx-dev \
-    opus-dev \
-    lame-dev \
-    libvorbis-dev \
-    libtheora-dev \
-    # Additional dependencies
-    freetype-dev \
-    fdk-aac-dev \
-    # SSL/TLS support
-    openssl-dev \
-    # Other useful libraries
-    zlib-dev \
-    bzip2-dev \
-    numactl-dev
-
-# Download and extract FFmpeg source
-WORKDIR /tmp
-RUN curl -fsSL https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz -o ffmpeg.tar.xz && \
-    tar -xf ffmpeg.tar.xz && \
-    rm ffmpeg.tar.xz
-
-# Configure and build FFmpeg
-WORKDIR /tmp/ffmpeg-${FFMPEG_VERSION}
-RUN ./configure \
-    --prefix=/usr/local \
-    --enable-gpl \
-    --enable-nonfree \
-    --enable-version3 \
-    --enable-small \
-    --enable-libx264 \
-    --enable-libx265 \
-    --enable-libvpx \
-    --enable-libopus \
-    --enable-libmp3lame \
-    --enable-libvorbis \
-    --enable-libtheora \
-    --enable-libfdk-aac \
-    --enable-openssl \
-    --disable-debug \
-    --disable-doc \
-    --disable-ffplay \
-    --disable-static \
-    --enable-shared && \
-    make -j$(nproc) && \
-    make install
-
-# Create a directory with all runtime libraries needed by ffmpeg
-RUN mkdir -p /ffmpeg-libs && \
-    cp -L /usr/lib/libx264*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libx265*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libvpx*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libopus*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libmp3lame*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libvorbis*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libvorbisenc*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libtheoraenc*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libtheoradec*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libtheora*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libfdk-aac*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libogg*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libstdc++*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libgcc_s*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libbz2*.so* /ffmpeg-libs/ 2>/dev/null || true && \
-    cp -L /usr/lib/libnuma*.so* /ffmpeg-libs/ 2>/dev/null || true
+# Download static FFmpeg build from johnvansickle.com (widely used, trusted source)
+# These are fully static binaries that work on any Linux without dependencies
+RUN apk add --no-cache curl xz && \
+    curl -fsSL https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o /tmp/ffmpeg.tar.xz && \
+    mkdir -p /tmp/ffmpeg && \
+    tar -xf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1 && \
+    mv /tmp/ffmpeg/ffmpeg /usr/local/bin/ffmpeg && \
+    mv /tmp/ffmpeg/ffprobe /usr/local/bin/ffprobe && \
+    chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe && \
+    rm -rf /tmp/ffmpeg /tmp/ffmpeg.tar.xz
 
 # ============================================================================
 # Node.js Base Stage
@@ -110,19 +41,6 @@ RUN apk add --no-cache python3 make g++ py3-pip
 # ============================================================================
 FROM node-gyp AS prod-deps
 
-# Copy runtime libraries from Alpine 3.21 builder (matching versions for ffmpeg)
-COPY --from=ffmpeg-builder /ffmpeg-libs/* /usr/lib/
-
-# Copy built ffmpeg binaries and libraries from builder
-COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
-COPY --from=ffmpeg-builder /usr/local/bin/ffprobe /usr/local/bin/ffprobe
-COPY --from=ffmpeg-builder /usr/local/lib/libav* /usr/local/lib/
-COPY --from=ffmpeg-builder /usr/local/lib/libsw* /usr/local/lib/
-COPY --from=ffmpeg-builder /usr/local/lib/libpostproc* /usr/local/lib/
-
-# Update library cache
-RUN ldconfig /usr/local/lib || true
-
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
 
 # ============================================================================
@@ -139,18 +57,9 @@ RUN cd admin && pnpm build
 # ============================================================================
 FROM base AS main
 
-# Copy runtime libraries from Alpine 3.21 builder (matching versions for ffmpeg)
-COPY --from=ffmpeg-builder /ffmpeg-libs/* /usr/lib/
-
-# Copy built ffmpeg 8.0.1 binaries and libraries from builder
-COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
-COPY --from=ffmpeg-builder /usr/local/bin/ffprobe /usr/local/bin/ffprobe
-COPY --from=ffmpeg-builder /usr/local/lib/libav* /usr/local/lib/
-COPY --from=ffmpeg-builder /usr/local/lib/libsw* /usr/local/lib/
-COPY --from=ffmpeg-builder /usr/local/lib/libpostproc* /usr/local/lib/
-
-# Update library cache
-RUN ldconfig /usr/local/lib || true
+# Copy static FFmpeg binaries (no additional dependencies needed!)
+COPY --from=ffmpeg-downloader /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
+COPY --from=ffmpeg-downloader /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=build ./app/build ./build
