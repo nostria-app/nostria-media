@@ -34,7 +34,11 @@ export async function optimizeImage(inputPath: string, options?: Partial<ImageOp
   const isLargeImage = (metadata.width || 0) * (metadata.height || 0) > 1024 * 768;
   const useProgressive = opts.progressive && isLargeImage;
 
-  // Handle EXIF data
+  // Auto-rotate based on EXIF orientation before any other processing
+  // This ensures images taken in portrait mode on phones are displayed correctly
+  sharpInstance = sharpInstance.rotate();
+
+  // Handle EXIF data (strip EXIF after rotation has been applied)
   if (!opts.keepExif) {
     sharpInstance = sharpInstance.withMetadata({ exif: {} });
   }
@@ -73,15 +77,18 @@ export async function optimizeGif(inputPath: string, options?: Partial<ImageOpti
 
   if (opts.outputFormat === "webp") {
     // Convert GIF to animated WebP
-    const sharpInstance = sharp(inputPath, { animated: true });
+    let sharpInstance = sharp(inputPath, { animated: true });
 
-    // Handle EXIF data
+    // Auto-rotate based on EXIF orientation
+    sharpInstance = sharpInstance.rotate();
+
+    // Handle EXIF data (strip EXIF after rotation has been applied)
     if (!opts.keepExif) {
-      sharpInstance.withMetadata({ exif: {} });
+      sharpInstance = sharpInstance.withMetadata({ exif: {} });
     }
 
     if (opts.maxWidth || opts.maxHeight) {
-      sharpInstance.resize(opts.maxWidth, opts.maxHeight, {
+      sharpInstance = sharpInstance.resize(opts.maxWidth, opts.maxHeight, {
         fit: opts.maintainAspectRatio ? "inside" : "fill",
         withoutEnlargement: true,
       });
