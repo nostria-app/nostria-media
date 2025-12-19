@@ -2,25 +2,28 @@
 
 # ============================================================================
 # FFmpeg Static Binary Stage
-# Downloads pre-built static FFmpeg binaries (no runtime dependencies needed)
+# Downloads pre-built static FFmpeg snapshot binaries from martin-riedl.de
 # ============================================================================
-FROM alpine:3.21 AS ffmpeg-downloader
+FROM debian:bookworm-slim AS ffmpeg-downloader
 
-# Download static FFmpeg build from johnvansickle.com (widely used, trusted source)
-# These are fully static binaries that work on any Linux without dependencies
-RUN apk add --no-cache curl xz && \
-    curl -fsSL https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o /tmp/ffmpeg.tar.xz && \
+# Download static FFmpeg snapshot build from martin-riedl.de
+RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates && \
     mkdir -p /tmp/ffmpeg && \
-    tar -xf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1 && \
+    curl -fsSL https://ffmpeg.martin-riedl.de/redirect/latest/linux/amd64/snapshot/ffmpeg.zip -o /tmp/ffmpeg.zip && \
+    curl -fsSL https://ffmpeg.martin-riedl.de/redirect/latest/linux/amd64/snapshot/ffprobe.zip -o /tmp/ffprobe.zip && \
+    unzip /tmp/ffmpeg.zip -d /tmp/ffmpeg && \
+    unzip /tmp/ffprobe.zip -d /tmp/ffmpeg && \
     mv /tmp/ffmpeg/ffmpeg /usr/local/bin/ffmpeg && \
     mv /tmp/ffmpeg/ffprobe /usr/local/bin/ffprobe && \
     chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe && \
-    rm -rf /tmp/ffmpeg /tmp/ffmpeg.tar.xz
+    rm -rf /tmp/ffmpeg /tmp/*.zip && \
+    # Verify it works
+    /usr/local/bin/ffmpeg -version
 
 # ============================================================================
-# Node.js Base Stage
+# Node.js Base Stage (Debian-based for glibc compatibility)
 # ============================================================================
-FROM node:22-alpine AS base
+FROM node:22-slim AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -34,7 +37,8 @@ COPY . .
 # ============================================================================
 FROM base AS node-gyp
 # Install required packages for node-gyp
-RUN apk add --no-cache python3 make g++ py3-pip
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && \
+    rm -rf /var/lib/apt/lists/*
 
 # ============================================================================
 # Production Dependencies Stage
@@ -57,7 +61,7 @@ RUN cd admin && pnpm build
 # ============================================================================
 FROM base AS main
 
-# Copy static FFmpeg binaries (no additional dependencies needed!)
+# Copy FFmpeg binaries
 COPY --from=ffmpeg-downloader /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=ffmpeg-downloader /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 
