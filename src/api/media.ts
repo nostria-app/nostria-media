@@ -11,13 +11,22 @@ import { checkUpload, UploadState } from "./upload.js";
 import { optimizeMedia } from "../optimize/index.js";
 import { getFileHash } from "../helpers/file.js";
 
+function getMediaMaxSize(contentType: string): number | undefined {
+  if (contentType.startsWith("image/")) {
+    return config.media.image?.maxSize;
+  } else if (contentType.startsWith("video/")) {
+    return config.media.video?.maxSize;
+  }
+  return undefined;
+}
+
 router.all<CommonState>(
   "/media",
   async (ctx, next) => {
     if (!config.media.enabled) throw new HttpErrors.NotFound("Media uploads disabled");
     return await next();
   },
-  checkUpload("media", config.media),
+  checkUpload("media", config.media, getMediaMaxSize),
 );
 
 router.head<UploadState>("/media", async (ctx) => {
