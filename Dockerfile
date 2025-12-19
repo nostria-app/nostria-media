@@ -32,7 +32,9 @@ RUN apk add --no-cache \
     # SSL/TLS support
     openssl-dev \
     # Other useful libraries
-    zlib-dev
+    zlib-dev \
+    bzip2-dev \
+    numactl-dev
 
 # Download and extract FFmpeg source
 WORKDIR /tmp
@@ -65,6 +67,25 @@ RUN ./configure \
     make -j$(nproc) && \
     make install
 
+# Create a directory with all runtime libraries needed by ffmpeg
+RUN mkdir -p /ffmpeg-libs && \
+    cp -L /usr/lib/libx264*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libx265*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libvpx*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libopus*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libmp3lame*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libvorbis*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libvorbisenc*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libtheoraenc*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libtheoradec*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libtheora*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libfdk-aac*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libogg*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libstdc++*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libgcc_s*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libbz2*.so* /ffmpeg-libs/ 2>/dev/null || true && \
+    cp -L /usr/lib/libnuma*.so* /ffmpeg-libs/ 2>/dev/null || true
+
 # ============================================================================
 # Node.js Base Stage
 # ============================================================================
@@ -88,19 +109,9 @@ RUN apk add --no-cache python3 make g++ py3-pip
 # Production Dependencies Stage
 # ============================================================================
 FROM node-gyp AS prod-deps
-# Install runtime libraries needed for ffmpeg (shared libraries only)
-RUN apk add --no-cache \
-    x264-libs \
-    x265-libs \
-    libvpx \
-    opus \
-    lame-libs \
-    libvorbis \
-    libtheora \
-    fdk-aac \
-    openssl \
-    freetype \
-    zlib
+
+# Copy runtime libraries from Alpine 3.21 builder (matching versions for ffmpeg)
+COPY --from=ffmpeg-builder /ffmpeg-libs/* /usr/lib/
 
 # Copy built ffmpeg binaries and libraries from builder
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
@@ -128,19 +139,8 @@ RUN cd admin && pnpm build
 # ============================================================================
 FROM base AS main
 
-# Install runtime libraries needed for ffmpeg 8.0.1 (shared libraries only)
-RUN apk add --no-cache \
-    x264-libs \
-    x265-libs \
-    libvpx \
-    opus \
-    lame-libs \
-    libvorbis \
-    libtheora \
-    fdk-aac \
-    openssl \
-    freetype \
-    zlib
+# Copy runtime libraries from Alpine 3.21 builder (matching versions for ffmpeg)
+COPY --from=ffmpeg-builder /ffmpeg-libs/* /usr/lib/
 
 # Copy built ffmpeg 8.0.1 binaries and libraries from builder
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
