@@ -155,7 +155,11 @@ export async function pruneStorage() {
 
     if (blobs.length > 0) {
       log(`Removing ${blobs.length} because they have no owners`);
-      db.prepare<string[]>(`DELETE FROM blobs WHERE sha256 IN ${mapParams(blobs)}`).run(...blobs.map((b) => b.sha256));
+      for (const blob of blobs) {
+        await blobDB.removeBlob(blob.sha256);
+        if (await storage.hasBlob(blob.sha256)) await storage.removeBlob(blob.sha256);
+        forgetBlobAccessed(blob.sha256);
+      }
     }
   }
 }
