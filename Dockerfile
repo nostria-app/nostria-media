@@ -6,7 +6,7 @@
 # ============================================================================
 FROM debian:bookworm-slim AS ffmpeg-downloader
 
-# Download static FFmpeg snapshot build from martin-riedl.de
+# Download static FFmpeg snapshot build for amd64
 RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates && \
     mkdir -p /tmp/ffmpeg && \
     curl -fsSL https://ffmpeg.martin-riedl.de/redirect/latest/linux/amd64/snapshot/ffmpeg.zip -o /tmp/ffmpeg.zip && \
@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-c
     mv /tmp/ffmpeg/ffmpeg /usr/local/bin/ffmpeg && \
     mv /tmp/ffmpeg/ffprobe /usr/local/bin/ffprobe && \
     chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe && \
-    rm -rf /tmp/ffmpeg /tmp/*.zip && \
+    rm -rf /tmp/ffmpeg /tmp/*.zip /var/lib/apt/lists/* && \
     # Verify it works
     /usr/local/bin/ffmpeg -version
 
