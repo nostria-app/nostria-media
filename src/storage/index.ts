@@ -58,7 +58,13 @@ export async function readStoragePointer(pointer: StoragePointer) {
   return await storage.readBlob(pointer.hash);
 }
 
-export async function addFromUpload(upload: UploadDetails, type?: string) {
+export async function addFromUpload(
+  upload: UploadDetails,
+  type?: string,
+  options?: {
+    uploaded?: number;
+  },
+) {
   type = type || upload.type;
 
   let blob: BlobMetadata;
@@ -68,8 +74,8 @@ export async function addFromUpload(upload: UploadDetails, type?: string) {
     await storage.writeBlob(upload.sha256, readUpload(upload), type);
     await removeUpload(upload);
 
-    const now = dayjs().unix();
-    blob = blobDB.addBlob({ sha256: upload.sha256, size: upload.size, type, uploaded: now });
+    const uploaded = options?.uploaded ?? dayjs().unix();
+    blob = blobDB.addBlob({ sha256: upload.sha256, size: upload.size, type, uploaded });
     updateBlobAccess(upload.sha256, dayjs().unix());
   } else {
     blob = blobDB.getBlob(upload.sha256);
