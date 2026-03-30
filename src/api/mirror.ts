@@ -2,10 +2,7 @@ import HttpErrors from "http-errors";
 import { BlobMetadata } from "blossom-server-sdk";
 import dayjs from "dayjs";
 import { koaBody } from "koa-body";
-import { IncomingMessage } from "http";
 import mount from "koa-mount";
-import followRedirects from "follow-redirects";
-const { http, https } = followRedirects;
 
 import storage from "../storage/index.js";
 import { CommonState, getBlobDescriptor, log, router } from "./router.js";
@@ -14,23 +11,7 @@ import { config } from "../config.js";
 import { updateBlobAccess } from "../db/methods.js";
 import { UploadDetails, readUpload, removeUpload, saveFromResponse } from "../storage/upload.js";
 import { blobDB } from "../db/db.js";
-
-function makeRequestWithAbort(url: URL) {
-  return new Promise<{ response: IncomingMessage; controller: AbortController }>((res, rej) => {
-    const cancelController = new AbortController();
-    const request = (url.protocol === "https:" ? https : http).get(
-      url,
-      {
-        signal: cancelController.signal,
-      },
-      (response) => {
-        res({ response, controller: cancelController });
-      },
-    );
-    request.on("error", (err) => rej(err));
-    request.end();
-  });
-}
+import { makeHTTPRequest } from "../transport/http.js";
 
 router.use(mount("/mirror", koaBody()));
 
@@ -48,7 +29,8 @@ router.put<CommonState>("/mirror", async (ctx) => {
 
   log(`Mirroring ${downloadUrl.toString()}`);
 
-  const { response, controller } = await makeRequestWithAbort(downloadUrl);
+  const controller = new AbortController();
+  const response = await makeHTTPRequest(downloadUrl, { signal: controller.signal });
   let maybeUpload: UploadDetails | undefined = undefined;
 
   try {

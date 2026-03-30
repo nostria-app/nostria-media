@@ -67,6 +67,16 @@ node .
 
 Once the server is running you can open `http://localhost:3000` to access the server
 
+## Full Sync Between Instances
+
+If the admin dashboard is enabled on both instances, you can open the local dashboard and use the `Full Sync` page to pull every missing blob from another Blossom server.
+
+- Enter the remote server URL.
+- Enter the remote instance admin password.
+- The local server will authenticate against the remote instance using Basic auth and only start syncing if the remote admin credentials are accepted.
+
+The sync process copies missing blobs, preserves their uploaded timestamp, and imports any owners returned by the remote admin API.
+
 ## FFmpeg Requirements
 
 The media optimization features (video transcoding, format conversion) require FFmpeg to be installed.
